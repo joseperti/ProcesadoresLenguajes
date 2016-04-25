@@ -1,0 +1,274 @@
+import java_cup.runtime.*;
+import java.util.Iterator;
+import java.util.Stack;
+
+parser code {:
+    APIExportacion apiExp = new APIExportacion("archivo.html");
+    /* Reporte de error encontrado. */
+    public void syntax_error(Symbol s,String mensaje){
+        report_error("",s);
+    }
+    public void syntax_error(Symbol s){
+        report_error("",s);
+    }
+    Stack<Object> pilaErrores = new Stack<Object>();
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error");
+        if (info instanceof java_cup.runtime.Symbol) {
+            pilaErrores.push(info);
+        }
+     }
+    ventanaNueva nuevaInterfaz;
+    Integer cont = 1;
+    public parser(java_cup.runtime.Scanner s, ventanaNueva i){super(s);nuevaInterfaz=i;}
+
+    public void lecturaError(String mensaje,Object e){
+        java_cup.runtime.Symbol s = (java_cup.runtime.Symbol) pilaErrores.pop();
+        nuevaInterfaz.imprimirError("Error sintáctico encontrado en Línea "+s.left+" Columna: "+s.right);
+        nuevaInterfaz.imprimirError("Error "+cont+".- "+mensaje+"\n");
+        cont+=1;
+     }
+    public void report_fatal_error(String message, Object info) {
+        java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+        nuevaInterfaz.imprimirError("Ha tenido lugar un error sintáctico sin recuperación posible: "+s.value
+        + " \nEn la línea "+s.left+" y columna "+s.right);
+        nuevaInterfaz.alerta("Ha tenido lugar un error sintáctico sin recuperación posible");
+    }
+    
+:};
+
+terminal program,begin,end,ident_const,var,procedure,function,div,mod,and,or,not,type,of,array,record,ident_if,then,ident_else,ident_while,ident_do,ident_for,to,ident_case,puntoComa,punto,igual,dosPuntos,parentesisAbierto,parentesisCerrado,INTEGER,REAL,CHARACTER,dosPuntosIgual,menor,menorIgual,mayor,mayorIgual,distinto,menos,asterisco,coma,numeric_integer_const,numeric_real_const,string_const,Identificador,corcheteAb,corcheteCe,puntosRango,suma;
+non terminal PRG,BLQ,DCLLIST,SENTLIST,DEFCTE,CTELIST,SIMPVALUE,DEFVAR,DEFVARLIST,VARLIST,DEFPROC,DEFFUN,FORMAL_PARAMLIST,FORMAL_PARAM,TBAS,SENT,ASIG,ID,EXP,OP,OPCOMP,OPARIT,OPLOG,SUBPPARAMLIST,EXPLIST,PROC_CALL,EXEBLQ,DCLLIST_BLQ,DCL_BLQ,DCL,DEFTYPE,TYPELIST,UDTYPE,FACTOR,ALLTYPES,COND,ELSECOND,WLOOP,FLOOP,CASE,CASELIST;
+precedence left asterisco,div,mod,suma,menos;
+precedence left or,and;
+precedence left menor,mayor,menorIgual,mayorIgual,igual,distinto,error;
+precedence left ident_else;
+precedence left array,record;
+
+PRG ::= program Identificador puntoComa BLQ punto 
+| error:e Identificador puntoComa BLQ punto {:parser.lecturaError("Se esperaba palabra reservada program",e);:}
+| program error:e puntoComa BLQ punto {:parser.lecturaError("Se esperaba identificador del programa",e);:}
+| program Identificador error:e BLQ punto {:parser.lecturaError("Se esperaba punto y coma después del identificador del programa",e);:};
+//Begin principal del programa
+BLQ ::= DCLLIST begin SENTLIST end 
+| DCLLIST error:e SENTLIST end  {:parser.lecturaError("Se esperaba palabra reservada begin",e);:}
+| DCLLIST begin:b SENTLIST error:e {:parser.lecturaError("Se esperaba cierre end del begin (en linea: "+bleft+")",e);:}
+| DCLLIST begin error:e end {:parser.lecturaError("Error en la zona de sentencias del programa",e);:};
+//Declaración de tipos
+DCLLIST ::=  DCLLIST DCL
+ |  ;
+//Sentencias de programa
+SENTLIST ::= SENT  
+ | SENTLIST SENT ;
+//Definiciones básicas
+DCL ::= DEFCTE  
+ | DEFVAR  
+ | DEFPROC
+ | DEFFUN  
+ | DEFTYPE ;
+//Definiciones de tipos
+DEFTYPE ::= type TYPELIST
+| error:e TYPELIST {:parser.lecturaError("Se esperaba palabra reservada type",e);:} ;
+//Definiciones básicas de tipos
+TYPELIST ::= Identificador igual UDTYPE puntoComa  
+ | Identificador igual UDTYPE puntoComa TYPELIST
+ | Identificador error:e UDTYPE puntoComa  {:parser.lecturaError("Falta igual en definición de tipo",e);:}
+| error:e igual UDTYPE puntoComa  {:parser.lecturaError("Falta identificador en definición de tipo",e);:}
+| Identificador igual error:e puntoComa  {:parser.lecturaError("Falta la definición de tipo",e);:};
+
+//Tipos de estructuras de datos
+UDTYPE ::= array corcheteAb SIMPVALUE puntosRango SIMPVALUE corcheteCe of ALLTYPES 
+ | record DEFVARLIST end
+ | array error:e SIMPVALUE puntosRango SIMPVALUE corcheteCe of ALLTYPES {:parser.lecturaError("Se esperaba '[' antes del intervalo",e);:}
+ | array corcheteAb SIMPVALUE puntosRango SIMPVALUE error:e of ALLTYPES {:parser.lecturaError("Se esperaba ']' despes del intervalo",e);:}
+ | array corcheteAb error:e corcheteCe of ALLTYPES {:parser.lecturaError("El intervalo del array está mal definido",e);:}
+ | error:e corcheteAb SIMPVALUE puntosRango SIMPVALUE corcheteCe of ALLTYPES {:parser.lecturaError("Se esperaba palabra reservada 'array'",e);:}
+ | array corcheteAb SIMPVALUE puntosRango SIMPVALUE corcheteCe error:e ALLTYPES {:parser.lecturaError("Se esperaba 'of' en la definición del array",e);:}
+ | error:e DEFVARLIST end {:parser.lecturaError("Se esperaba palabra reservada 'record' en la definición del registro",e);:}
+ | record error:e end {:parser.lecturaError("Se esperaba definiciones de variables en la definición de registro",e);:}
+ | array error:e of ALLTYPES {:parser.lecturaError("Se esperaba intervalo en la definición del array",e);:};
+
+//Definición de constantes
+DEFCTE ::= ident_const CTELIST
+| error:e CTELIST {:parser.lecturaError("Se esperaba palabra reservada 'const' en la definicion de constantes",e);:};
+
+//Definiciones de constantes
+CTELIST ::= Identificador igual SIMPVALUE puntoComa  
+| CTELIST Identificador igual SIMPVALUE puntoComa
+| error:e igual SIMPVALUE puntoComa {:parser.lecturaError("Se esperaba identificador en la definicion de constante",e);:};
+//| Identificador:i igual error:e puntoComa {:parser.lecturaError("Se esperaba valor simple en la definicion de constante "+((java_cup.runtime.Symbol) i).value,e);:}
+//| Identificador:i error:e SIMPVALUE puntoComa {:parser.lecturaError("Se esperaba '=' en la definicion de constante "+((java_cup.runtime.Symbol) i).value,e);:};
+
+
+//Valores simples
+SIMPVALUE ::= numeric_integer_const:t 
+ | numeric_real_const  
+ | string_const;
+
+//Definiciones de variables
+DEFVAR ::= var DEFVARLIST puntoComa 
+| error:e DEFVARLIST puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'var'",e);:}
+| var error:e puntoComa {:parser.lecturaError("Se esperaban definiciones de variables",e);:};
+
+//Definición de variables
+DEFVARLIST ::= VARLIST dosPuntos ALLTYPES  
+ | DEFVARLIST puntoComa VARLIST dosPuntos ALLTYPES 
+ | VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
+ | DEFVARLIST puntoComa VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
+ | error:e dosPuntos ALLTYPES  {:parser.lecturaError("Se esperaba lista de variables",e);:};
+
+//Definición de variable
+VARLIST ::= Identificador  
+ | Identificador coma VARLIST 
+ | error:e coma VARLIST {:parser.lecturaError("Se esperaba identificador de la variable",e);:}
+ | Identificador:i error:e VARLIST {:parser.lecturaError("Se esperaba ',' despues del identificador de la variable "+i,e);:};
+
+//Definición de procedimiento
+DEFPROC ::=  procedure Identificador FORMAL_PARAMLIST puntoComa BLQ puntoComa 
+//| error:e Identificador FORMAL_PARAMLIST puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'procedure'",e);:};
+| procedure error:e FORMAL_PARAMLIST puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba identificador de procedimiento",e);:} 
+| procedure Identificador:i error:e puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba la definicion de parametros del procedimiento "+i,e);:};
+
+//He hecho hasta aquí
+//Definicion de funcion
+DEFFUN ::=  function Identificador FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa 
+| function error:e FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba identificador de la funcion",e);:} 
+| function Identificador:i error:e dosPuntos ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba la definicion de parametros de la funcion "+i,e);:}
+| function Identificador:i FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa error:e puntoComa  {:parser.lecturaError("Se esperaba cuerpo de la funcion "+i,e);:}
+| function Identificador:i FORMAL_PARAMLIST error:e ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba ':' antes del tipo de dato devuelto por la funcion "+i,e);:}
+| function Identificador:i FORMAL_PARAMLIST dosPuntos error:e puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba tipo de dato devuelto por la funcion "+i+" despues de ':'",e);:} ;
+//Definiciones de parametros
+FORMAL_PARAMLIST ::= parentesisAbierto FORMAL_PARAM parentesisCerrado 
+ | error:e FORMAL_PARAM parentesisCerrado  {:parser.lecturaError("Se esperaba '(' antes de la lista de parametros ",e);:}
+ | parentesisAbierto error:e parentesisCerrado  {:parser.lecturaError("Los parametros se encuentran mal definidos",e);:}
+ |  ;
+//Definicion de parametro
+FORMAL_PARAM ::= VARLIST dosPuntos ALLTYPES  
+ | error:e dosPuntos ALLTYPES {:parser.lecturaError("La lista de variables esta mal definida en los parametros",e);:}
+ | VARLIST error:e ALLTYPES {:parser.lecturaError("Se esperaba ':' despues de la lista de variables",e);:}
+ | VARLIST dosPuntos ALLTYPES puntoComa FORMAL_PARAM 
+ | VARLIST error:e ALLTYPES puntoComa FORMAL_PARAM {:parser.lecturaError("Se esperaba ':' despues de la lista de variables",e);:}
+ | error:e dosPuntos ALLTYPES puntoComa FORMAL_PARAM {:parser.lecturaError("La lista de variables esta mal definida en los parametros",e);:};
+
+//Reservados de tipos basicos
+TBAS ::= INTEGER  
+ | REAL  
+ | CHARACTER;
+
+//Declaracion de sentencias
+SENT ::= ASIG puntoComa
+ | PROC_CALL puntoComa  
+ | EXEBLQ 
+ | CASE
+ | COND
+ | WLOOP
+ | FLOOP;
+
+//Control Case
+CASE ::= ident_case EXP of CASELIST end puntoComa
+| error:e EXP of CASELIST end puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'case'",e);:}
+| ident_case EXP error:e CASELIST end puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'of'",e);:}
+| ident_case error:e of CASELIST end puntoComa {:parser.lecturaError("Error en la expresión principal del case",e);:}
+| ident_case EXP of error:e end puntoComa {:parser.lecturaError("Error en la lista de casos de case",e);:}
+| ident_case EXP of CASELIST error:e puntoComa {:parser.lecturaError("Se esperaba 'end' en la finalización de case",e);:};
+
+//Sentencias de case
+CASELIST ::= EXP dosPuntos SENT | EXP dosPuntos SENT CASELIST;
+
+//Control de flujp WHILE
+WLOOP ::= ident_while EXP ident_do SENT
+|ident_while error:e ident_do SENT {:parser.lecturaError("Error de expresión en el while",e);:}
+|ident_while EXP error:e SENT {:parser.lecturaError("Se esperaba palabra reservada 'do'",e);:};
+
+//CONTROL de flujo FOR
+FLOOP ::= ident_for Identificador dosPuntosIgual EXP to EXP ident_do SENT
+ | ident_for error:e dosPuntosIgual EXP to EXP ident_do SENT {:parser.lecturaError("Error en el identificador del for",e);:}
+ | ident_for Identificador:i error:e EXP to EXP ident_do SENT {:parser.lecturaError("Se esperaba ':=' despues del identificador "+i+" del bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual EXP error:e EXP ident_do SENT {:parser.lecturaError("Se esperaba palabra reservada 'to' en bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual EXP to EXP error:e SENT {:parser.lecturaError("Se esperaba palabra reservada 'do' en bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual EXP to error:e ident_do SENT {:parser.lecturaError("Error en la expresion de limite del bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual error:e to EXP ident_do SENT {:parser.lecturaError("Error en la expresion de inicializacion del bucle for",e);:};
+
+//Condicional IF
+COND ::= ident_if EXP then SENT ELSECOND
+| ident_if error:e then SENT ELSECOND {:parser.lecturaError("Error en la expresion de condicion del if",e);:}
+| ident_if EXP error:e SENT ELSECOND {:parser.lecturaError("Se esperaba la palabra reservada 'then' en el if",e);:};
+//| ident_if EXP then error:e ELSECOND {:parser.lecturaError("Error en las sentencias del cuerpo del if",e);:};
+
+//Condicional ELSE
+ELSECOND ::= ident_else SENT 
+    | ;
+
+//Identificadores
+ID ::= Identificador  
+ | Identificador corcheteAb EXP corcheteCe 
+ | Identificador punto Identificador
+ | Identificador:i corcheteAb error:e corcheteCe {:parser.lecturaError("Error en la expresion de acceso en el identificador "+i,e);:};
+
+//Asignaciones
+ASIG ::= ID dosPuntosIgual EXP;
+
+//Uso de expresiones
+EXP ::= EXP OP EXP  
+ | FACTOR;
+
+//Tipo de operaciones entre expresiones
+OP ::= OPCOMP
+ | OPLOG  
+ | OPARIT ;
+
+//Operaciones de comparacion entre expresiones
+OPCOMP ::= menor
+ | mayor  
+ | menorIgual  
+ | mayorIgual  
+ | igual  
+ | distinto ;
+
+//Operaciones aritmeticas entre expresiones
+OPARIT ::= suma  
+ | menos
+ | asterisco  
+ | div  
+ | mod  ;
+
+//Operaciones logicas entre expresiones
+OPLOG ::= or
+ | and  ;
+
+//Declaraciones de factores
+FACTOR ::= SIMPVALUE
+ | not FACTOR  
+ | Identificador corcheteAb EXP corcheteCe  
+ | parentesisAbierto EXP parentesisCerrado  
+ | Identificador SUBPPARAMLIST
+ | Identificador punto Identificador
+ | Identificador:i corcheteAb error:e corcheteCe {:parser.lecturaError("Error en la expresion de acceso en el identificador "+i,e);:};
+
+//SubParametros
+SUBPPARAMLIST ::= parentesisAbierto EXPLIST parentesisCerrado  
+ |  ;
+
+//Lista de expresiones
+EXPLIST ::= EXP  
+ | EXP coma EXPLIST ;
+
+//Llamada a procedimiento
+PROC_CALL ::= Identificador SUBPPARAMLIST ;
+
+//Declaracion del cuerpo de procedimiento o funcion
+EXEBLQ ::= DCLLIST_BLQ begin SENTLIST end 
+| DCLLIST_BLQ begin:b SENTLIST error:e puntoComa{:parser.lecturaError("Se esperaba cierre end del begin (en linea: "+bleft+")",e);:};
+
+//Lista de declaraciones previas al cuerpo
+DCLLIST_BLQ ::= DCLLIST_BLQ puntoComa DCL_BLQ  
+ |  ;
+
+//Tipos de declaraciones previas al cuerpo
+DCL_BLQ ::= DEFCTE  
+ | DEFTYPE  
+ | DEFVAR ;
+
+//Tipos que podemos utilizar en las definiciones
+ALLTYPES ::= TBAS  
+ | Identificador ;

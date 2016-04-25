@@ -1,0 +1,19 @@
+program EjemploAprobado;
+function areaCuadrado ( lado: REAL ) : REAL ;
+var
+	resultado: REAL;
+begin
+	resultado := +0.0;
+	resultado := lado * lado;
+	areaCuadrado := resultado;
+(*Vemos que falta 'end;'*)
+var
+	medida :REAL;
+	valor1, valor2: INTEGER;
+begin
+	medida := $4.A;
+	valor1 := -3;
+	valor2 := $F6;
+	medida := areaCuadrado( medida );
+	intercambio(valor1, valor2);
+end.

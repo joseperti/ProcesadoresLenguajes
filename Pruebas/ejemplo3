@@ -1,0 +1,33 @@
+program EjemploAprobado;
+procedure intercambio ( v1, v2: INTEGER );
+type
+	vector1 = array [1] of INTEGER;
+	datos = 
+		campo1:INTEGER;
+		campo2:REAL
+	end;
+var
+	aux: INTEGER;
+begin
+	aux := 0;
+	aux := v1;
+	v1 := v2;
+	v2 := aux;
+	if ( v1>v2) then
+		v1 := 2;
+	else
+		v1 := 3;
+	while (2>3) do
+		resultado := lado + lado;
+	for aux :=  to 5 do
+		resultado := aux;
+	case aux of
+		3: resultado;
+	end;
+end;
+var
+	medida :REAL;
+	valor1, valor2: INTEGER;
+begin
+	aux:=1;
+end.
