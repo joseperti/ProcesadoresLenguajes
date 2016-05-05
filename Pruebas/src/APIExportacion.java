@@ -78,6 +78,7 @@ public class APIExportacion {
     
     
     public void addCabecera(String linea){
+        System.out.println("Cabecera añadida: "+linea);
         cabeceras.add(linea);
     }
         
@@ -91,7 +92,7 @@ public class APIExportacion {
         
         this.escribirArchivo("<ul>");
         for (String k : cabeceras){
-            
+            System.out.println("<li>"+k+"</li>");
             this.escribirArchivo("<li>"+k+"</li>");
             
         }

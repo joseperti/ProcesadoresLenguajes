@@ -46,7 +46,7 @@ precedence left menor,mayor,menorIgual,mayorIgual,igual,distinto,error;
 precedence left ident_else;
 precedence left array,record;
 
-PRG ::= program Identificador:id puntoComa BLQ punto {:parser.apiExp.escribirArchivo((String)id);:}
+PRG ::= program Identificador:id puntoComa BLQ punto {:parser.apiExp.escribirArchivo((String)id);parser.apiExp.escribirCabeceras();parser.apiExp.cerrarFichero();:}
 | error:e Identificador puntoComa BLQ punto {:parser.lecturaError("Se esperaba palabra reservada program",e);:}
 | program error:e puntoComa BLQ punto {:parser.lecturaError("Se esperaba identificador del programa",e);:}
 | program Identificador error:e BLQ punto {:parser.lecturaError("Se esperaba punto y coma después del identificador del programa",e);:};
@@ -127,7 +127,7 @@ VARLIST ::= Identificador:id {:Simbolo s = new Simbolo();
                                s.arrayVariables.add((String)id);
                                RESULT = s;:}  
  | Identificador:id coma VARLIST:v {:((Simbolo) v).arrayVariables.add((String)id);
-                                     RESULT = s;:}
+                                     RESULT = v;:}
  | error:e coma VARLIST {:parser.lecturaError("Se esperaba identificador de la variable",e);:}
  | Identificador:i error:e VARLIST {:parser.lecturaError("Se esperaba ',' despues del identificador de la variable "+i,e);:};
 
