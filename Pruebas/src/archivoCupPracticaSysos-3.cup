@@ -151,9 +151,15 @@ FORMAL_PARAM ::= VARLIST dosPuntos ALLTYPES
  | error:e dosPuntos ALLTYPES puntoComa FORMAL_PARAM {:parser.lecturaError("La lista de variables esta mal definida en los parametros",e);:};
 
 //Reservados de tipos basicos
-TBAS ::= INTEGER  
- | REAL  
- | CHARACTER;
+TBAS ::= INTEGER {:Simbolo s = new Simbolo();
+               s.tipoDato = Simbolo.T_DATO_INTEGER;
+               RESULT = s;:}
+ | REAL  {:Simbolo s = new Simbolo();
+               s.tipoDato = Simbolo.T_DATO_REAL;
+               RESULT = s;:}
+ | CHARACTER {:Simbolo s = new Simbolo();
+               s.tipoDato = Simbolo.T_DATO_CHARACTER;
+               RESULT = s;:};
 
 //Declaracion de sentencias
 SENT ::= ASIG puntoComa
@@ -213,28 +219,67 @@ EXP ::= EXP OP EXP
  | FACTOR;
 
 //Tipo de operaciones entre expresiones
-OP ::= OPCOMP
- | OPLOG  
- | OPARIT ;
+OP ::= OPCOMP:op {:RESULT = op;:}
+ | OPLOG:op  {:RESULT = op;:}
+ | OPARIT:op {:RESULT = op;:} ;
 
 //Operaciones de comparacion entre expresiones
-OPCOMP ::= menor
- | mayor  
- | menorIgual  
- | mayorIgual  
- | igual  
- | distinto ;
+OPCOMP ::= menor {:Simbolo s = new Simbolo();
+               s.op = "<";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | mayor  {:Simbolo s = new Simbolo();
+               s.op = ">";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | menorIgual  {:Simbolo s = new Simbolo();
+               s.op = "<=";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | mayorIgual  {:Simbolo s = new Simbolo();
+               s.op = ">=";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | igual  {:Simbolo s = new Simbolo();
+               s.op = "==";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | distinto {:Simbolo s = new Simbolo();
+               s.op = "!=";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:};
 
 //Operaciones aritmeticas entre expresiones
-OPARIT ::= suma  
- | menos
- | asterisco  
- | div  
- | mod  ;
+OPARIT ::= suma {:Simbolo s = new Simbolo();
+               s.op = "+";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | menos {:Simbolo s = new Simbolo();
+               s.op = "-";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | asterisco  {:Simbolo s = new Simbolo();
+               s.op = "*";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | div  {:Simbolo s = new Simbolo();
+               s.op = "/";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | mod {:Simbolo s = new Simbolo();
+               s.op = "%";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:} ;
 
 //Operaciones logicas entre expresiones
-OPLOG ::= or
- | and  ;
+OPLOG ::= or {:Simbolo s = new Simbolo();
+               s.op = "||";
+               s.tipoOperador= Simbolo.T_OP_LOG;
+               RESULT = s;:}
+ | and  {:Simbolo s = new Simbolo();
+               s.op = "&&";
+               s.tipoOperador= Simbolo.T_OP_LOG;
+               RESULT = s;:} ;
 
 //Declaraciones de factores
 FACTOR ::= SIMPVALUE
@@ -270,5 +315,9 @@ DCL_BLQ ::= DEFCTE
  | DEFVAR ;
 
 //Tipos que podemos utilizar en las definiciones
-ALLTYPES ::= TBAS  
- | Identificador ;
+ALLTYPES ::= TBAS:t {:RESULT = t;:}  
+ | Identificador:id {:Simbolo s = new Simbolo();
+               s.tipoDato = id;
+               RESULT = s;:};
+
+
