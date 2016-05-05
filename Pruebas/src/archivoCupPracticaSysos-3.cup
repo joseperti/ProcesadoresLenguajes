@@ -2,6 +2,8 @@ import java_cup.runtime.*;
 import java.util.Iterator;
 import java.util.Stack;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 parser code {:
     APIExportacion apiExp = new APIExportacion("archivo.html");
@@ -107,16 +109,22 @@ SIMPVALUE ::= numeric_integer_const:t
  | string_const;
 
 //Definiciones de variables
-DEFVAR ::= var DEFVARLIST puntoComa 
+DEFVAR ::= var DEFVARLIST:dv puntoComa {:RESULT = dv;:}
 | error:e DEFVARLIST puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'var'",e);:}
 | var error:e puntoComa {:parser.lecturaError("Se esperaban definiciones de variables",e);:};
 
 //Definición de variables
-DEFVARLIST ::= VARLIST:v dosPuntos ALLTYPES:t {:for(String sr:((Simbolo)v).arrayVariables){
-                                                System.out.println(sr+" es del tipo "+((Simbolo)t).tipoDato);
-                                                                    }
-                                              ;:} 
- | DEFVARLIST puntoComa VARLIST dosPuntos ALLTYPES 
+DEFVARLIST ::= VARLIST:v dosPuntos ALLTYPES:t {:Simbolo s = new Simbolo();
+                                                s.mapaVariables = new HashMap<String,String>();
+                                                for(((Simbolo)v).arrayVariables:var){
+                                                  s.mapaVariables.put(var,((String)((Simbolo)t).tipoDato));
+                                                }
+                                                RESULT = s;:} 
+ | DEFVARLIST:dv puntoComa VARLIST:v dosPuntos ALLTYPES:t {:for(((Simbolo)v).arrayVariables:var){
+                                                              ((Simbolo)dv).mapaVariables.put(var,((String)((Simbolo)t).tipoDato));
+                                                            }
+                                                            RESULT = dv;
+                                                          :}
  | VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
  | DEFVARLIST puntoComa VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
  | error:e dosPuntos ALLTYPES  {:parser.lecturaError("Se esperaba lista de variables",e);:};

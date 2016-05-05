@@ -1,5 +1,6 @@
 
 import java.util.ArrayList;
+import java.util.Map
 
 
 public class Simbolo {
@@ -7,6 +8,7 @@ public class Simbolo {
 	public Character tipoOperador;
 	public String tipoDato;
 	public ArrayList<String> arrayVariables;
+	public Map<String,String> mapaVariables;
 	
 	public static final Character T_OP_LOG = 'l';
 	public static final Character T_OP_ARIT = 'a';
