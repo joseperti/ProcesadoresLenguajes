@@ -628,8 +628,7 @@ class AnalizadorLexico implements java_cup.runtime.Scanner {
   private void zzDoEOF() throws java.io.IOException {
     if (!zzEOFDone) {
       zzEOFDone = true;
-        nuevaInterfaz.finalizarErrores();
-  yyclose();
+      yyclose();
     }
   }
 

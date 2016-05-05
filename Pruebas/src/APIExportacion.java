@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.APPEND;
+import java.util.LinkedList;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -20,6 +21,8 @@ public class APIExportacion {
     String ruta;
     PrintWriter salida;
     String saltoLinea = "<br>";
+    LinkedList<String> cabeceras = new LinkedList();
+    String nombrePrograma;
     
     public APIExportacion(String rutaIn){
         ruta = rutaIn;
@@ -71,5 +74,28 @@ public class APIExportacion {
         this.escribirArchivo("<span class='ident'>"+nombre+"</span>");
     }
     
+    
+    public void addCabeceraFunciones(String linea){
+        cabeceras.add(linea);
+    }
+        
+    public void escribirTituloArchivo(String nombrePrograma){
+        
+        this.escribirArchivo("<h1>Programa: "+nombrePrograma+" </h1>");
+        
+    }
+    
+    public void escribirCabeceras(){
+        
+        this.escribirArchivo("<ul>");
+        for (String k : cabeceras){
+            
+            this.escribirArchivo("<li>"+k+"</li>");
+            
+        }
+        
+        this.escribirArchivo("</ul>");
+        
+    }
     
 }

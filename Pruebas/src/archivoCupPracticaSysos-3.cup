@@ -45,7 +45,7 @@ precedence left menor,mayor,menorIgual,mayorIgual,igual,distinto,error;
 precedence left ident_else;
 precedence left array,record;
 
-PRG ::= program Identificador puntoComa BLQ punto 
+PRG ::= program Identificador:id puntoComa BLQ punto {:parser.apiExp.escribirArchivo((String)id);parser.apiExp.cerrarFichero();:}
 | error:e Identificador puntoComa BLQ punto {:parser.lecturaError("Se esperaba palabra reservada program",e);:}
 | program error:e puntoComa BLQ punto {:parser.lecturaError("Se esperaba identificador del programa",e);:}
 | program Identificador error:e BLQ punto {:parser.lecturaError("Se esperaba punto y coma después del identificador del programa",e);:};
@@ -317,7 +317,7 @@ DCL_BLQ ::= DEFCTE
 //Tipos que podemos utilizar en las definiciones
 ALLTYPES ::= TBAS:t {:RESULT = t;:}  
  | Identificador:id {:Simbolo s = new Simbolo();
-               s.tipoDato = id;
+               s.tipoDato = (String) id;
                RESULT = s;:};
 
 
