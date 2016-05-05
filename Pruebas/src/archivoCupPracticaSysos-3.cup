@@ -111,15 +111,22 @@ DEFVAR ::= var DEFVARLIST puntoComa
 | var error:e puntoComa {:parser.lecturaError("Se esperaban definiciones de variables",e);:};
 
 //Definición de variables
-DEFVARLIST ::= VARLIST dosPuntos ALLTYPES  
+DEFVARLIST ::= VARLIST:v dosPuntos ALLTYPES:t {for(String sr:v.arrayVariables){
+                                                System.out.println(sr+" es del tipo "+t.tipoDato);
+                                                                    }
+                                              ;} 
  | DEFVARLIST puntoComa VARLIST dosPuntos ALLTYPES 
  | VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
  | DEFVARLIST puntoComa VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
  | error:e dosPuntos ALLTYPES  {:parser.lecturaError("Se esperaba lista de variables",e);:};
 
 //Definición de variable
-VARLIST ::= Identificador  
- | Identificador coma VARLIST 
+VARLIST ::= Identificador:id {:Simbolo s = new Simbolo();
+                               s.arrayVariables = new ArrayList<String>();
+                               s.add((String)id)
+                               RESULT = s;:}  
+ | Identificador:id coma VARLIST:v {:v.arrayVariables.add((String)id);
+                                     RESULT = s:}
  | error:e coma VARLIST {:parser.lecturaError("Se esperaba identificador de la variable",e);:}
  | Identificador:i error:e VARLIST {:parser.lecturaError("Se esperaba ',' despues del identificador de la variable "+i,e);:};
 

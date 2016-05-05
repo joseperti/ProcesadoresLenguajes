@@ -3,6 +3,7 @@ public class Simbolo {
 	public String op;
 	public Character tipoOperador;
 	public String tipoDato;
+	public ArrayList<String> arrayVariables;
 	
 	public static final Character T_OP_LOG = 'l';
 	public static final Character T_OP_ARIT = 'a';
