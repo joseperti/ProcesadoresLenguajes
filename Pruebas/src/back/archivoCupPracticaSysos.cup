@@ -1,0 +1,98 @@
+import java_cup.runtime.*;
+terminal program,begin,end,ident_const,var,procedure,function,div,mod,and,or,not,type,of,array,record,ident_if,then,ident_else,ident_while,ident_do,ident_for,to,ident_case,puntoComa,punto,igual,dosPuntos,parentesisAbierto,parentesisCerrado,INTEGER,REAL,CHARACTER,dosPuntosIgual,menor,menorIgual,mayor,mayorIgual,distinto,suma,menos,asterisco,coma,numeric_integer_const,numeric_real_const,ConstHexadecimalEntera,ConstHexadecimalReal,string_const,Comentario,Identificador,corcheteAb,corcheteCe,puntosRango,mas;
+non terminal PRG,BLQ,DCLLIST,SENTLIST,DEFCTE,CTELIST,SIMPVALUE,DEFVAR,DEFVARLIST,VARLIST,DEFPROC,DEFFUN,FORMAL_PARAMLIST,FORMAL_PARAM,TBAS,SENT,ASIG,ID,EXP,OP,OPCOMP,OPARIT,OPLOG,SUBPPARAMLIST,EXPLIST,PROC_CALL,EXEBLQ,DCLLIST_BLQ,DCL_BLQ,DCL,DEFTYPE,TYPELIST,UDTYPE,FACTOR,ALLTYPES,COND,ELSECOND,WLOOP,FLOOP,CASE,CASELIST;
+precedence left mas,menos;
+precedence left asterisco,div,mod;
+precedence left or,and;
+precedence left menor,mayor,menorIgual,mayorIgual,igual,distinto;
+precedence left EXEBLQ, COND, WLOOP, FLOOP, CASE,ident_else;
+
+parser code {:System.out.prinln("Hola");:}
+
+PRG ::= program Identificador puntoComa BLQ punto  ;
+BLQ ::= DCLLIST begin SENTLIST end ;
+DCLLIST ::=  DCLLIST DCL  
+ |  ;
+SENTLIST ::= SENT  
+ | SENTLIST SENT ;
+DCL ::= DEFCTE  
+ | DEFVAR  
+ | DEFPROC  
+ | DEFFUN  
+ | DEFTYPE ;
+DEFTYPE ::= type TYPELIST ;
+TYPELIST ::= Identificador igual UDTYPE puntoComa  
+ | Identificador igual UDTYPE puntoComa TYPELIST ;
+UDTYPE ::= array corcheteAb SIMPVALUE puntosRango SIMPVALUE corcheteCe of ALLTYPES ;
+DEFCTE ::= ident_const CTELIST ;
+CTELIST ::= Identificador igual SIMPVALUE puntoComa  
+ | CTELIST Identificador igual SIMPVALUE puntoComa ;
+SIMPVALUE ::= numeric_integer_const  
+ | numeric_real_const  
+ | string_const ;
+DEFVAR ::= var DEFVARLIST puntoComa ;
+DEFVARLIST ::= VARLIST dosPuntos ALLTYPES  
+ | DEFVARLIST puntoComa VARLIST dosPuntos ALLTYPES  ;
+VARLIST ::= Identificador  
+ | Identificador coma VARLIST ;
+DEFPROC ::=  procedure Identificador FORMAL_PARAMLIST puntoComa BLQ puntoComa  ;
+DEFFUN ::=  function Identificador FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa  ;
+FORMAL_PARAMLIST ::= parentesisAbierto FORMAL_PARAM parentesisCerrado  
+ |  ;
+FORMAL_PARAM ::= VARLIST dosPuntos ALLTYPES  
+ | VARLIST dosPuntos ALLTYPES puntoComa FORMAL_PARAM ;
+TBAS ::= INTEGER  
+ | REAL  
+ | CHARACTER ;
+SENT ::= ASIG puntoComa  
+ | PROC_CALL puntoComa  
+ | EXEBLQ 
+ | COND
+ | WLOOP
+ | FLOOP
+ | CASE;
+CASE ::= ident_case EXP of CASELIST end;
+CASELIST ::= EXP dosPuntos SENT puntoComa | EXP dosPuntos SENT puntoComa CASELIST;
+WLOOP ::= ident_while EXP ident_do SENT ;
+FLOOP ::= ident_for Identificador dosPuntosIgual EXP to EXP ident_do SENT;
+COND ::= ident_if EXP then SENT ELSECOND;
+ELSECOND ::= ident_else SENT | ;
+ID ::= Identificador  
+ | Identificador corcheteAb EXP corcheteCe ;
+ASIG ::= ID dosPuntosIgual EXP  ;
+EXP ::= EXP OP EXP  
+ | FACTOR ;
+OP ::= OPCOMP  
+ | OPLOG  
+ | OPARIT ;
+OPCOMP ::= menor  
+ | mayor  
+ | menorIgual  
+ | mayorIgual  
+ | igual  
+ | distinto  ;
+OPARIT ::= mas  
+ | menos  
+ | asterisco  
+ | div  
+ | mod  ;
+OPLOG ::= or  
+ | and  ;
+FACTOR ::= SIMPVALUE  
+ | not FACTOR  
+ | Identificador corcheteAb EXP corcheteCe  
+ | parentesisAbierto EXP parentesisCerrado  
+ | Identificador SUBPPARAMLIST ;
+SUBPPARAMLIST ::= parentesisAbierto EXPLIST parentesisCerrado  
+ |  ;
+EXPLIST ::= EXP  
+ | EXP coma EXPLIST ;
+PROC_CALL ::= Identificador SUBPPARAMLIST ;
+EXEBLQ ::= DCLLIST_BLQ begin SENTLIST end  ;
+DCLLIST_BLQ ::= DCLLIST_BLQ puntoComa DCL_BLQ  
+ |  ;
+DCL_BLQ ::= DEFCTE  
+ | DEFTYPE  
+ | DEFVAR ;
+ALLTYPES ::= TBAS  
+ | Identificador ;

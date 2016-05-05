@@ -1,0 +1,30 @@
+Para el funcionamiento de la interfaz añadir:
+
+Flex:
+
+    	ventanaNueva nuevaInterfaz;
+        public void tokenReconocido(String s){
+		nuevaInterfaz.imprimirMensaje(s);
+	}
+
+        AnalizadorLexico(java.io.Reader in,ventanaNueva i){
+            nuevaInterfaz = i;
+            this.zzReader = in;
+        }
+
+Cup:
+    
+    ventanaNueva nuevaInterfaz;
+
+    public parser(java_cup.runtime.Scanner s, ventanaNueva i){super(s);nuevaInterfaz=i;}
+
+    public void lecturaError(String mensaje,Object e){
+        java_cup.runtime.Symbol s = (java_cup.runtime.Symbol) pilaErrores.pop();
+        nuevaInterfaz.imprimirError("Error sintáctico encontrado en Línea "+s.left+" Columna: "+s.right);
+        nuevaInterfaz.imprimirError(mensaje);
+        
+     }
+    public void report_fatal_error(String message, Object info) {
+        nuevaInterfaz.imprimirError("Ha tenido lugar un error sintáctico sin recuperación posible");
+        System.exit(1);
+    }
