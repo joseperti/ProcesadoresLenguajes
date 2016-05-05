@@ -1,6 +1,7 @@
 import java_cup.runtime.*;
 import java.util.Iterator;
 import java.util.Stack;
+import java.util.ArrayList;
 
 parser code {:
     APIExportacion apiExp = new APIExportacion("archivo.html");
@@ -45,7 +46,7 @@ precedence left menor,mayor,menorIgual,mayorIgual,igual,distinto,error;
 precedence left ident_else;
 precedence left array,record;
 
-PRG ::= program Identificador:id puntoComa BLQ punto {:parser.apiExp.escribirArchivo((String)id);parser.apiExp.cerrarFichero();:}
+PRG ::= program Identificador:id puntoComa BLQ punto {:parser.apiExp.escribirArchivo((String)id);:}
 | error:e Identificador puntoComa BLQ punto {:parser.lecturaError("Se esperaba palabra reservada program",e);:}
 | program error:e puntoComa BLQ punto {:parser.lecturaError("Se esperaba identificador del programa",e);:}
 | program Identificador error:e BLQ punto {:parser.lecturaError("Se esperaba punto y coma después del identificador del programa",e);:};
@@ -111,10 +112,10 @@ DEFVAR ::= var DEFVARLIST puntoComa
 | var error:e puntoComa {:parser.lecturaError("Se esperaban definiciones de variables",e);:};
 
 //Definición de variables
-DEFVARLIST ::= VARLIST:v dosPuntos ALLTYPES:t {for(String sr:v.arrayVariables){
-                                                System.out.println(sr+" es del tipo "+t.tipoDato);
+DEFVARLIST ::= VARLIST:v dosPuntos ALLTYPES:t {:for(String sr:((Simbolo)v).arrayVariables){
+                                                System.out.println(sr+" es del tipo "+((Simbolo)t).tipoDato);
                                                                     }
-                                              ;} 
+                                              ;:} 
  | DEFVARLIST puntoComa VARLIST dosPuntos ALLTYPES 
  | VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
  | DEFVARLIST puntoComa VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
@@ -123,22 +124,22 @@ DEFVARLIST ::= VARLIST:v dosPuntos ALLTYPES:t {for(String sr:v.arrayVariables){
 //Definición de variable
 VARLIST ::= Identificador:id {:Simbolo s = new Simbolo();
                                s.arrayVariables = new ArrayList<String>();
-                               s.add((String)id)
+                               s.arrayVariables.add((String)id);
                                RESULT = s;:}  
- | Identificador:id coma VARLIST:v {:v.arrayVariables.add((String)id);
-                                     RESULT = s:}
+ | Identificador:id coma VARLIST:v {:((Simbolo) v).arrayVariables.add((String)id);
+                                     RESULT = s;:}
  | error:e coma VARLIST {:parser.lecturaError("Se esperaba identificador de la variable",e);:}
  | Identificador:i error:e VARLIST {:parser.lecturaError("Se esperaba ',' despues del identificador de la variable "+i,e);:};
 
 //Definición de procedimiento
-DEFPROC ::=  procedure Identificador FORMAL_PARAMLIST puntoComa BLQ puntoComa 
+DEFPROC ::=  procedure Identificador:id FORMAL_PARAMLIST puntoComa BLQ puntoComa {:parser.apiExp.addCabecera("procedure "+((String)id));:}
 //| error:e Identificador FORMAL_PARAMLIST puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'procedure'",e);:};
 | procedure error:e FORMAL_PARAMLIST puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba identificador de procedimiento",e);:} 
 | procedure Identificador:i error:e puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba la definicion de parametros del procedimiento "+i,e);:};
 
 //He hecho hasta aquí
 //Definicion de funcion
-DEFFUN ::=  function Identificador FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa 
+DEFFUN ::=  function Identificador:id FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa {:parser.apiExp.addCabecera("function "+((String)id));:}
 | function error:e FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba identificador de la funcion",e);:} 
 | function Identificador:i error:e dosPuntos ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba la definicion de parametros de la funcion "+i,e);:}
 | function Identificador:i FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa error:e puntoComa  {:parser.lecturaError("Se esperaba cuerpo de la funcion "+i,e);:}

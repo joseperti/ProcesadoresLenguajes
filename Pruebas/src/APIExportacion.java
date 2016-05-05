@@ -20,7 +20,9 @@ public class APIExportacion {
     
     String ruta;
     PrintWriter salida;
-    String saltoLinea = "<br>";
+    String saltoLinea = "<br>";            
+            // A partir del objeto File creamos el fichero físicamente
+
     LinkedList<String> cabeceras = new LinkedList();
     String nombrePrograma;
     
@@ -75,7 +77,7 @@ public class APIExportacion {
     }
     
     
-    public void addCabeceraFunciones(String linea){
+    public void addCabecera(String linea){
         cabeceras.add(linea);
     }
         
