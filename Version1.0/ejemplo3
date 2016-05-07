@@ -1,0 +1,41 @@
+program EjemploAprobado;
+procedure procedimiento ( v1,v2: INTEGER );
+type
+	vector1 = array [1..2] of INTEGER;
+	datos = record
+		campo1:REAL;
+		campo2:REAL
+	end;
+var
+	aux: INTEGER;
+begin
+	aux := 0;
+	aux := v1;
+	v1 := v2;
+	v2 := aux;
+	datos := 1;
+	vector1 := 18;
+	if  1 > 2  then
+		v1 := 2;
+	else
+		v1 := 3;
+	while  2 + 3  do
+		resultado := lado + lado;
+	for aux := datos.campo1 to 5 do
+		resultado := aux;
+	case 'a' of
+		'1': resultado;
+	end;
+end;
+function funcion(v1:REAL):INTEGER;
+const
+	valor1 = 2.5;
+begin
+	v1 := valor1 + 2.4;
+end;
+var
+	medida :REAL;
+	valor1, valor2: INTEGER;
+begin
+	aux:=1;
+end.

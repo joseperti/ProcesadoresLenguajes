@@ -1,0 +1,23 @@
+program EjemploAprobado;
+function areaCuadrado ( variable : REAL ) : REAL ;
+var
+	resultado: REAL;
+type
+	vector1 = array [1..4] of INTEGER;
+	datos = record
+		campo1:INTEGER;
+		campo2:REAL
+	end;
+begin
+	vecto1[1] := 0;
+	datos.campo1 := 0;
+	resultado := +0.0;
+	resultado := lado * lado;
+	{areaCuadrado := resultado;}
+end;
+var
+	medida :REAL;
+	valor1, valor2: INTEGER;
+begin
+	medida := $4.A;
+end.
