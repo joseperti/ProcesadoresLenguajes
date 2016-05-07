@@ -1,0 +1,17 @@
+<HTML>
+<TITLE>EjNotable.pl.html</TITLE>
+<style>
+.indentado{margin-left: 1cm;}
+.cte {color:rgb(19,189,72);}
+.ident {color:rgb(55,40,244);}
+.palres {color:rgb(0,0,0);font-weight:bold;}
+</style>
+</head>
+<BODY><h1>Programa: EjemploNotable </h1><h2>Funciones y Procedimientos</h2><a name='inicio'></a><ul><li><a href='#areaCuadrado'>function  areaCuadrado  (lado:<span class='palres'> REAL </span>):<span class='palres'> REAL </span></a></li><li><a href='#intercambio'>procedure  intercambio  (v2,v1:<span class='palres'> INTEGER </span>)</a></li><li><a href='#progPpal'>Programa principal</a></li></ul><hr/>function <a name='areaCuadrado'></a><span class='ident'>areaCuadrado</span> (lado:<span class='palres'> REAL </span>):<span class='palres'> REAL </span><br>type <div class='indentado'>miArray = <span class='palres'> array </span> [ <span class='cte'>0</span> .. <span class='cte'>5</span> ] <span class='palres'> of </span> <span class='palres'> INTEGER </span>;<br></div>var <div class='indentado'><a name='resultado'></a><span class='ident'>resultado</span>:<span class='palres'> REAL </span>;</div><br>begin<div class='indentado'><a href='#resultado'>resultado</a>:=<span class='cte'>+0.0</span>;<br>miArray[<span class='cte'>1</span>]:=<span class='cte'>0</span>;<br><a href='#resultado'>resultado</a>:=<a href='#lado'>lado</a>*<a href='#lado'>lado</a>+<a href='#miArray'>miArray</a>[<span class='cte'>1</span>+<span class='cte'>2</span>];<br><a href='#areaCuadrado'>areaCuadrado</a>:=<a href='#resultado'>resultado</a>;<br></div>end<br><br><a href='#areaCuadrado'>Inicio rutina</a><br><a href='#inicio'>Inicio de programa</a><hr/>procedure <a name='intercambio'></a><span class='ident'>intercambio</span> (v2,v1:<span class='palres'> INTEGER </span>)<br>var <div class='indentado'><a name='aux'></a><span class='ident'>aux</span>:<span class='palres'> INTEGER </span>;</div><br>begin<div class='indentado'><span class='palres'>if </span> (<a href='#v1'>v1</a>!=<a href='#v2'>v2</a>) <span class='palres'> then </span><div class='indentado'>
+<a href='#aux'>aux</a>:=<span class='cte'>0</span>;<br>
+</div>
+
+<a href='#aux'>aux</a>:=<a href='#v1'>v1</a>;<br><a href='#v1'>v1</a>:=<a href='#v2'>v2</a>;<br><a href='#v2'>v2</a>:=<a href='#aux'>aux</a>;<br></div>end<br><br><a href='#intercambio'>Inicio rutina</a><br><a href='#inicio'>Inicio de programa</a><hr/><h2>Programa Principal</h2><a name='progPpal'></a>var <div class='indentado'><a name='medida'></a><span class='ident'>medida</span>:<span class='palres'> REAL </span>;<br><a name='valor1'></a><span class='ident'>valor1</span>,<a name='valor2'></a><span class='ident'>valor2</span>:<span class='palres'> INTEGER </span>;</div><br>begin<div class='indentado'><a href='#medida'>medida</a>:=<span class='cte'>$4.A</span>;<br><a href='#valor1'>valor1</a>:=<span class='cte'>-3</span>;<br><a href='#valor2'>valor2</a>:=<span class='cte'>$F6</span>;<br><span class='palres'> while </span>
+<a href='#medida'>medida</a><<a href='#valor1'>valor1</a><span class='palres'> do </span><div class='indent'><a href='#medida'>medida</a>:=<a href='#areaCuadrado'>areaCuadrado</a>(<a href='#medida'>medida</a>);<br></div><a href='#intercambio'>intercambio</a>(<a href='#valor1'>valor1</a> , <a href='#valor2'>valor2</a>);<br></div>end<br>
+</BODY>
+</HTML>

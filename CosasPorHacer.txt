@@ -1,0 +1,4 @@
+SENTLIST en IF y comprobación de tipo expresión
+Impresión de bucle for y comprobación de tipos
+Adecuación de Case y comprobación de tipos
+Comprobación de tipos en Array
