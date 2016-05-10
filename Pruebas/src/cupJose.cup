@@ -31,7 +31,7 @@ parser code {:
         cont+=1;
      }
      public void lecturaErrorSem(String mensaje){
-        nuevaInterfaz.imprimirError("Error .- "+mensaje+"\n");
+        nuevaInterfaz.imprimirError("Error Semántico.- "+mensaje+"\n");
      }
     public void report_fatal_error(String message, Object info) {
         java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
@@ -96,16 +96,16 @@ TYPELIST ::= Identificador:id igual UDTYPE:d puntoComa {:Simbolo s = new Simbolo
 | Identificador igual error:e puntoComa  {:parser.lecturaError("Falta la definición de tipo",e);:};
 
 //Tipos de estructuras de datos
-UDTYPE ::= array corcheteAb SIMPVALUE:sv1 puntosRango SIMPVALUE:sv2 corcheteCe of ALLTYPES:t {:
+UDTYPE ::= array:a corcheteAb SIMPVALUE:sv1 puntosRango SIMPVALUE:sv2 corcheteCe of ALLTYPES:t {:
                 Simbolo s = new Simbolo();
                 Simbolo s1 = (Simbolo) sv1;Simbolo s2 = (Simbolo) sv2;Simbolo s3 = (Simbolo)t;
                 if (s1.tipoDatoBasico != s.T_INTEGER || s2.tipoDatoBasico != s.T_INTEGER){
-                    parser.lecturaErrorSem("El intervalo debe ser de numeros enteros");
+                    parser.lecturaErrorSem("Error al declarar array de la linea "+a.left+" columna "+a.rigth+" Motivo:El intervalo debe ser de numeros enteros");
                 }else{
                     Integer valor1 = Integer.parseInt(s1.nombre);
                     Integer valor2 = Integer.parseInt(s2.nombre);
                     if (valor1 > valor2){
-                        parser.lecturaErrorSem("El primer valor del rango es mayor que el segundo en la definición del array");
+                        parser.lecturaErrorSem("Error al declarar array de la linea "+a.left+" columna "+a.rigth+" Motivo:El primer valor del rango es mayor que el segundo en la definición del array");
                     }
                 }
                 ;
@@ -200,7 +200,7 @@ DEFFUN ::=  function Identificador:id FORMAL_PARAMLIST:f dosPuntos ALLTYPES:t pu
                                                                                     parser.apiExp.escribirArchivo(s.auxiliar);
                                                                                     //RESULT = s;
                                                                                     if (!(parser.apiExp.buscarAsignacion((String) id))){
-                                                                                        parser.lecturaErrorSem("No se ha asignado salida a la función: "+((String)id));parser.apiExp.cancelar();
+                                                                                        parser.lecturaErrorSem("Error en la función "+((String)id))+" de la linea "+id.left+" columna "+id.rigth+" Motivo:No se ha asignado salida a la función: "+((String)id));parser.apiExp.cancelar();
                                                                                     };
                                                                                     RESULT = new Simbolo();:}
 | function error:e FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba identificador de la funcion",e);:} 
@@ -263,10 +263,10 @@ SENT ::= ASIG:a puntoComa {:Simbolo s1 = (Simbolo) a;s1.auxiliar = s1.auxiliar +
  | FLOOP:e {:Simbolo s1 = (Simbolo) e; RESULT = s1;:};
 
 //Control Case
-CASE ::= ident_case EXP:e of CASELIST:l end puntoComa {:Simbolo s  = new Simbolo();
+CASE ::= ident_case:ca EXP:e of CASELIST:l end puntoComa {:Simbolo s  = new Simbolo();
                                                         Simbolo s1  = (Simbolo) e;
                                                         Simbolo s2  = (Simbolo) l;
-                                                        if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Las expresiones de los casos no son de tipo entero");};
+                                                        if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Error en el CASE de la línea "+ca.left+" y columna "+ca.right+". Motivo: Las expresiones de los casos no son de tipo entero");};
                                                         s.auxiliar = "<span class='palres'> case</span> "+s1.auxiliar+"<span class='palres'> of </span><div class='indentado'>"+s2.auxiliar+"</div> <span class='palres'> end</span>;";
                                                         RESULT = s;:}
 | error:e EXP of CASELIST end puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'case'",e);:}
@@ -276,21 +276,21 @@ CASE ::= ident_case EXP:e of CASELIST:l end puntoComa {:Simbolo s  = new Simbolo
 | ident_case EXP of CASELIST error:e puntoComa {:parser.lecturaError("Se esperaba 'end' en la finalización de case",e);:};
 
 //Sentencias de case
-CASELIST ::= EXP:e dosPuntos SENT:st {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
-                                     if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Las expresiones de los casos no son de tipo entero");};
+CASELIST ::= EXP:e dosPuntos:dp SENT:st {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
+                                     if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Error en el caso del CASE de la linea "+dp.left+" y la columna "+dp.right+". Motivo:Las expresiones de los casos no son de tipo entero");};
                                      Simbolo s2 = (Simbolo) st; s.auxiliar = s1.auxiliar + ": "+s2.auxiliar;
                                     RESULT = s;:}
-| EXP:e dosPuntos SENT:st CASELIST:l {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;Simbolo s3 = (Simbolo) l;
-                                    if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Las expresiones de los casos no son de tipo entero");};
+| EXP:e dosPuntos:dp SENT:st CASELIST:l {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;Simbolo s3 = (Simbolo) l;
+                                    if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Error en el caso del CASE de la linea "+dp.left+" y la columna "+dp.right+". Motivo:Las expresiones de los casos no son de tipo entero");};
                                      Simbolo s2 = (Simbolo) st; s.auxiliar = s1.auxiliar + ":"+s2.auxiliar+"<br>"+s3.auxiliar;
                                     RESULT = s;:};
 
 //Control de flujp WHILE
-WLOOP ::= ident_while EXP:e ident_do SENT:st {:Simbolo s = new Simbolo();
+WLOOP ::= ident_while:wh EXP:e ident_do SENT:st {:Simbolo s = new Simbolo();
                                         Simbolo s1 = (Simbolo) e;
                                         Simbolo s2 = (Simbolo) st;
                                         if (s1.tipoOperador != s.T_OP_COMP){
-                                            parser.lecturaErrorSem("No es de tipo booleano la expresión del WHILE");
+                                            parser.lecturaErrorSem("Error en el WHILE de la linea "+wh.left+" y columna "+wh.right+". Motivo: No es de tipo booleano la expresión del WHILE");
                                         };
                                         s.auxiliar = "<span class='palres'> while </span>\n"+s1.auxiliar+
                                         "<span class='palres'> do </span><div class='indentado'>"+s2.auxiliar+"</div>";RESULT = s;:}
@@ -298,13 +298,13 @@ WLOOP ::= ident_while EXP:e ident_do SENT:st {:Simbolo s = new Simbolo();
 |ident_while EXP error:e SENT {:parser.lecturaError("Se esperaba palabra reservada 'do'",e);:};
 
 //CONTROL de flujo FOR
-FLOOP ::= ident_for Identificador:id dosPuntosIgual EXP:e1 to EXP:e2 ident_do SENT:st {:Simbolo s = new Simbolo();
+FLOOP ::= ident_for:fr Identificador:id dosPuntosIgual EXP:e1 to EXP:e2 ident_do SENT:st {:Simbolo s = new Simbolo();
                                         Simbolo s1 = (Simbolo) e1;
                                         Simbolo s2 = (Simbolo) e2;
                                         Simbolo s3 = (Simbolo) st;
                                         String nomId = (String) id;
                                         if (parser.apiExp.getTipo(nomId) != s.T_INTEGER || s1.tipoDatoBasico != s.T_INTEGER || s2.tipoDatoBasico != s.T_INTEGER){
-                                            parser.lecturaErrorSem("El bucle for no está definido con enteros");
+                                            parser.lecturaErrorSem("Error en el bucle FOR de la linea "+fr.left+" y columna "+fr.right+". Motivo: El bucle for no está definido con enteros");
                                         }
                                         s.auxiliar = "<span class='palres'> for </span><a href='#"+nomId+"'>"+nomId+" </a>"+
                                         " := "+s1.auxiliar+" <span class='palres'> to </span>"+s2.auxiliar+"<div class='indentado'>"+s3.auxiliar+"</div>";RESULT = s;:}
@@ -316,9 +316,9 @@ FLOOP ::= ident_for Identificador:id dosPuntosIgual EXP:e1 to EXP:e2 ident_do SE
  | ident_for Identificador:i dosPuntosIgual error:e to EXP ident_do SENT {:parser.lecturaError("Error en la expresion de inicializacion del bucle for",e);:};
 
 //Condicional IF
-COND ::= ident_if EXP:e then SENT:st ELSECOND:ec {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
+COND ::= ident_if:i EXP:e then SENT:st ELSECOND:ec {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
                                             if (s1.tipoOperador != s.T_OP_COMP){
-                                                parser.lecturaErrorSem("No es de tipo booleano la expresión del IF");
+                                                parser.lecturaErrorSem("Error en el IF de la línea "+i.left+" y columna "+i.rigth+". Motivo: No es de tipo booleano la expresión del IF");
                                             };
                                             Simbolo s2 = (Simbolo) st;Simbolo s3 = (Simbolo) ec;
                                             s.auxiliar = "<span class='palres'>if </span> "+s1.auxiliar+" <span class='palres'> then </span><div class='indentado'>\n"+s2.auxiliar+"\n</div>\n"+s3.auxiliar+"\n";
@@ -335,8 +335,8 @@ ELSECOND ::= ident_else SENT:st {:Simbolo s = new Simbolo();Simbolo s1 = (Simbol
 
 //Identificadores
 ID ::= Identificador:i {:Simbolo s = new Simbolo();s.auxiliar = "<a href='#"+((String)i)+"'>"+((String)i)+"</a>";s.nombre = (String) i;s.tipoDatoBasico = parser.apiExp.getTipo(s.nombre);RESULT = s;:}  
- | Identificador:i corcheteAb EXP:e corcheteCe {:Simbolo s = new Simbolo(); Simbolo s1 = (Simbolo) e;String id = (String) i;
-                                            if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("No es un entero en el acceso al array: "+i);};
+ | Identificador:i corcheteAb:ca EXP:e corcheteCe {:Simbolo s = new Simbolo(); Simbolo s1 = (Simbolo) e;String id = (String) i;
+                                            if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Error en el acceso del Array de la linea "+ca.left+" y columna "+ca.rigth+". Motivo: No es un entero en el acceso al array: "+i);};
                                             s.auxiliar = "<a href='#"+id+"'>"+id+"</a>"+"["+s1.auxiliar+"]";
                                             RESULT = s;:}  
  | Identificador:i1 punto Identificador:i2 {:Simbolo s = new Simbolo();String id1 = (String) i1; String id2 = (String) i2;
@@ -346,7 +346,7 @@ ID ::= Identificador:i {:Simbolo s = new Simbolo();s.auxiliar = "<a href='#"+((S
  | Identificador:i corcheteAb error:e corcheteCe {:parser.lecturaError("Error en la expresion de acceso en el identificador "+i,e);:};
 
 //Asignaciones
-ASIG ::= ID:id dosPuntosIgual EXP:e {:Simbolo s = new Simbolo();
+ASIG ::= ID:id dosPuntosIgual:dpi EXP:e {:Simbolo s = new Simbolo();
                                        Simbolo s1 = (Simbolo) id;
                                        Simbolo s2 = (Simbolo) e;
                                        s.auxiliar = s1.auxiliar +":="+s2.auxiliar;
@@ -354,10 +354,10 @@ ASIG ::= ID:id dosPuntosIgual EXP:e {:Simbolo s = new Simbolo();
                                        parser.apiExp.insertAsig(s1.nombre);
                                         
                                         if (s1.tipoDatoBasico=="REGISTRO" ){
-                                            parser.lecturaErrorSem("No se puede asignar directamente a variables de tipo registro");
+                                            parser.lecturaErrorSem("Error en la asignación de la linea "+dpi.left+" y columna "+dpi.right+". Motivo: No se puede asignar directamente a variables de tipo registro");
                                         };
                                         if (s1.tipoDatoBasico == "ARRAY"){
-                                            parser.lecturaErrorSem("No se puede asignar directamente a variables de tipo array");
+                                            parser.lecturaErrorSem("Error en la asignación de la linea "+dpi.left+" y columna "+dpi.right+". Motivo: No se puede asignar directamente a variables de tipo registro");
                                         }
                                         ;RESULT = s;
                                 :};
