@@ -1,0 +1,492 @@
+import java_cup.runtime.*;
+import java.util.Iterator;
+import java.util.Stack;
+import java.util.ArrayList;
+
+parser code {:
+    String ruta = "";
+    APIExportacion apiExp;
+    /* Reporte de error encontrado. */
+    public void syntax_error(Symbol s,String mensaje){
+        report_error("",s);
+    }
+    public void syntax_error(Symbol s){
+        report_error("",s);
+    }
+    Stack<Object> pilaErrores = new Stack<Object>();
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error");
+        if (info instanceof java_cup.runtime.Symbol) {
+            pilaErrores.push(info);
+        }
+     }
+    ventanaNueva nuevaInterfaz;
+    Integer cont = 1;
+    public parser(java_cup.runtime.Scanner s, ventanaNueva i){super(s);nuevaInterfaz=i;}
+    public parser(java_cup.runtime.Scanner s, ventanaNueva i,String nombreArchivo){super(s);nuevaInterfaz=i;ruta= nombreArchivo;apiExp =new APIExportacion(ruta);}
+    public void lecturaError(String mensaje,Object e){
+        java_cup.runtime.Symbol s = (java_cup.runtime.Symbol) pilaErrores.pop();
+        nuevaInterfaz.imprimirError("Error sintáctico encontrado en Línea "+s.left+" Columna: "+s.right);
+        nuevaInterfaz.imprimirError("Error "+cont+".- "+mensaje+"\n");
+        cont+=1;
+     }
+     public void lecturaErrorSem(String mensaje){
+        nuevaInterfaz.imprimirError("Error .- "+mensaje+"\n");
+     }
+    public void report_fatal_error(String message, Object info) {
+        java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+        nuevaInterfaz.imprimirError("Ha tenido lugar un error sintáctico sin recuperación posible: "+s.value
+        + " \nEn la línea "+s.left+" y columna "+s.right);
+        nuevaInterfaz.alerta("Ha tenido lugar un error sintáctico sin recuperación posible");
+    }
+    
+:};
+
+terminal program,begin,end,ident_const,var,procedure,function,div,mod,and,or,not,type,of,array,record,ident_if,then,ident_else,ident_while,ident_do,ident_for,to,ident_case,puntoComa,punto,igual,dosPuntos,parentesisAbierto,parentesisCerrado,INTEGER,REAL,CHARACTER,dosPuntosIgual,menor,menorIgual,mayor,mayorIgual,distinto,menos,asterisco,coma,numeric_integer_const,numeric_real_const,string_const,Identificador,corcheteAb,corcheteCe,puntosRango,suma;
+non terminal PRG,BLQ,DCLLIST,SENTLIST,DEFCTE,CTELIST,SIMPVALUE,DEFVAR,DEFVARLIST,VARLIST,DEFPROC,DEFFUN,FORMAL_PARAMLIST,FORMAL_PARAM,TBAS,SENT,ASIG,ID,EXP,OP,OPCOMP,OPARIT,OPLOG,SUBPPARAMLIST,EXPLIST,PROC_CALL,EXEBLQ,DCLLIST_BLQ,DCL_BLQ,DCL,DEFTYPE,TYPELIST,UDTYPE,FACTOR,ALLTYPES,COND,ELSECOND,WLOOP,FLOOP,CASE,CASELIST;
+precedence left asterisco,div,mod,suma,menos;
+precedence left or,and;
+precedence left menor,mayor,menorIgual,mayorIgual,igual,distinto,error;
+precedence left ident_else;
+precedence left array,record;
+
+PRG ::= program Identificador:id puntoComa BLQ:b punto {:parser.apiExp.escribirTituloArchivo((String)id);parser.apiExp.escribirBufferDelante("<hr/><h2>Programa Principal</h2><a name='progPpal'></a>");
+                                                      Simbolo s1 = (Simbolo) b;parser.apiExp.escribirBuffer(s1.auxiliar);
+                                                      parser.apiExp.liberarBufferDelante();parser.apiExp.cerrarFichero();
+                                                      :}
+| error:e Identificador puntoComa BLQ punto {:parser.lecturaError("Se esperaba palabra reservada program",e);:}
+| program error:e puntoComa BLQ punto {:parser.lecturaError("Se esperaba identificador del programa",e);:}
+| program Identificador error:e BLQ punto {:parser.lecturaError("Se esperaba punto y coma después del identificador del programa",e);:};
+//Begin principal del programa
+BLQ ::= DCLLIST:d begin SENTLIST:l end {:Simbolo s1 = (Simbolo) d;Simbolo s2 = (Simbolo) l;
+                    //parser.apiExp.escribirBuffer("<br>begin<br>"+s1.auxiliar+"<br>end<br>");
+                    Simbolo s = new Simbolo();s.auxiliar = s1.auxiliar+"<br>begin<div class='indentado'>"+s2.auxiliar+"</div>end<br>";
+                    RESULT = s;
+                :}
+| DCLLIST error:e SENTLIST end  {:parser.lecturaError("Se esperaba palabra reservada begin",e);:}
+| DCLLIST begin:b SENTLIST error:e {:parser.lecturaError("Se esperaba cierre end del begin (en linea: "+bleft+")",e);:}
+| DCLLIST begin error:e end {:parser.lecturaError("Error en la zona de sentencias del programa",e);:};
+//Declaración de tipos
+DCLLIST ::=  DCLLIST:d1 DCL:d2 {:Simbolo s1 = (Simbolo)d1;Simbolo s2 = (Simbolo) d2;Simbolo s = new Simbolo();
+                                    s.auxiliar = s1.auxiliar + s2.auxiliar;RESULT = s;:}
+ | {:Simbolo s = new Simbolo();RESULT = s;:} ;
+//Sentencias de programa
+SENTLIST ::= SENT:e {:Simbolo s1 = (Simbolo) e; RESULT = s1;:}
+ | SENTLIST:l SENT:e {:Simbolo s1 = (Simbolo) e;Simbolo s2 = (Simbolo) l;Simbolo s = new Simbolo();
+                      s.auxiliar = s2.auxiliar + s1.auxiliar; RESULT = s;:};
+//Definiciones básicas
+DCL ::= DEFCTE:d {:RESULT = new Simbolo();:}  
+ | DEFVAR:d {:RESULT = d;:}  
+ | DEFPROC:d {:RESULT = d;:}
+ | DEFFUN:d {:RESULT = d;:}  
+ | DEFTYPE:d {:RESULT = d;:} ;
+//Definiciones de tipos
+DEFTYPE ::= type TYPELIST:l {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) l; s.auxiliar = "type <div class='indentado'>"+s1.auxiliar+"</div>";RESULT = s;:}
+| error:e TYPELIST {:parser.lecturaError("Se esperaba palabra reservada type",e);:} ;
+//Definiciones básicas de tipos
+TYPELIST ::= Identificador:id igual UDTYPE:d puntoComa {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) d;
+                                                        s.auxiliar = "<span class='ident'>"+ ((String) id)+"</span>" + " = "+s1.auxiliar+";<br>";
+                                                        parser.apiExp.insertarVar(((String) id),s1.tipoDatoBasico);RESULT = s;:}
+ | Identificador:id igual UDTYPE:d puntoComa TYPELIST:l{:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) d;Simbolo s2 = (Simbolo) l;
+                                                            s.auxiliar = "<span class='ident'>"+ ((String) id)+"</span>" + " = "+s1.auxiliar+";<br>"+s2.auxiliar;
+                                                            parser.apiExp.insertarVar(((String) id),s1.tipoDatoBasico);RESULT = s;
+                                                        :}
+ | Identificador error:e UDTYPE puntoComa  {:parser.lecturaError("Falta igual en definición de tipo",e);:}
+| error:e igual UDTYPE puntoComa  {:parser.lecturaError("Falta identificador en definición de tipo",e);:}
+| Identificador igual error:e puntoComa  {:parser.lecturaError("Falta la definición de tipo",e);:};
+
+//Tipos de estructuras de datos
+UDTYPE ::= array corcheteAb SIMPVALUE:sv1 puntosRango SIMPVALUE:sv2 corcheteCe of ALLTYPES:t {:
+                Simbolo s = new Simbolo();
+                Simbolo s1 = (Simbolo) sv1;Simbolo s2 = (Simbolo) sv2;Simbolo s3 = (Simbolo)t;
+                if (s1.tipoDatoBasico != s.T_INTEGER || s2.tipoDatoBasico != s.T_INTEGER){
+                    parser.lecturaErrorSem("El intervalo debe ser de numeros enteros");
+                }else{
+                    Integer valor1 = Integer.parseInt(s1.nombre);
+                    Integer valor2 = Integer.parseInt(s2.nombre);
+                    if (valor1 > valor2){
+                        parser.lecturaErrorSem("El primer valor del rango es mayor que el segundo en la definición del array");
+                    }
+                }
+                ;
+s.auxiliar = "<span class='palres'> array </span> [ "+s1.auxiliar+" .. "+s2.auxiliar+" ] <span class='palres'> of </span> "+s3.tipoDato;
+                s.tipoDatoBasico = s.T_ARRAY;RESULT = s;:}
+ | record DEFVARLIST:l end  {:Simbolo s = new Simbolo();s.tipoDatoBasico = s.T_RECORD;Simbolo s1 = (Simbolo) l;s.auxiliar = "<span class='palres'> record </span><div class='indentado'> "+s1.auxiliar+"</div> end";RESULT = s;:}
+ | array error:e SIMPVALUE puntosRango SIMPVALUE corcheteCe of ALLTYPES {:parser.lecturaError("Se esperaba '[' antes del intervalo",e);:}
+ | array corcheteAb SIMPVALUE puntosRango SIMPVALUE error:e of ALLTYPES {:parser.lecturaError("Se esperaba ']' despes del intervalo",e);:}
+ | array corcheteAb error:e corcheteCe of ALLTYPES {:parser.lecturaError("El intervalo del array está mal definido",e);:}
+ | error:e corcheteAb SIMPVALUE puntosRango SIMPVALUE corcheteCe of ALLTYPES {:parser.lecturaError("Se esperaba palabra reservada 'array'",e);:}
+ | array corcheteAb SIMPVALUE puntosRango SIMPVALUE corcheteCe error:e ALLTYPES {:parser.lecturaError("Se esperaba 'of' en la definición del array",e);:}
+ | error:e DEFVARLIST end {:parser.lecturaError("Se esperaba palabra reservada 'record' en la definición del registro",e);:}
+ | record error:e end {:parser.lecturaError("Se esperaba definiciones de variables en la definición de registro",e);:}
+ | array error:e of ALLTYPES {:parser.lecturaError("Se esperaba intervalo en la definición del array",e);:};
+
+//Definición de constantes
+DEFCTE ::= ident_const CTELIST:l {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) l; s.auxiliar = "const <div class='indentado'>"+s1.auxiliar+"</div>";RESULT = s;:}
+| error:e CTELIST {:parser.lecturaError("Se esperaba palabra reservada 'const' en la definicion de constantes",e);:};
+
+//Definiciones de constantes
+CTELIST ::= Identificador:id igual SIMPVALUE:v puntoComa  {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo)v;
+                                                            s.auxiliar = ((String)id)+" = "+s1.auxiliar+";";RESULT = s;:}
+| CTELIST:l Identificador:id igual SIMPVALUE:v puntoComa {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo)v;Simbolo s2 = (Simbolo) l;
+                                                            s.auxiliar = s2.auxiliar+"<br>"+ ((String)id)+" = "+s1.auxiliar+";";RESULT = s;:}
+| error:e igual SIMPVALUE puntoComa {:parser.lecturaError("Se esperaba identificador en la definicion de constante",e);:};
+//| Identificador:i igual error:e puntoComa {:parser.lecturaError("Se esperaba valor simple en la definicion de constante "+((java_cup.runtime.Symbol) i).value,e);:}
+//| Identificador:i error:e SIMPVALUE puntoComa {:parser.lecturaError("Se esperaba '=' en la definicion de constante "+((java_cup.runtime.Symbol) i).value,e);:};
+
+
+//Valores simples
+SIMPVALUE ::= numeric_integer_const:t {:Simbolo s = new Simbolo();s.tipoDatoBasico = s.T_INTEGER; s.auxiliar = "<span class='cte'>"+((String) t)+"</span>";s.nombre = ((String) t);RESULT = s;:}
+ | numeric_real_const:t {:Simbolo s = new Simbolo(); s.tipoDatoBasico = s.T_REAL;s.auxiliar = "<span class='cte'>"+((String) t)+"</span>";RESULT = s;:}
+ | string_const:t {:Simbolo s = new Simbolo();s.tipoDatoBasico = s.T_CHARACTER;s.auxiliar = "<span class='cte'>"+((String) t)+"</span>";RESULT = s;:};
+
+DEFVAR ::= var DEFVARLIST:l puntoComa {:Simbolo s1 = (Simbolo) l;Simbolo s = new Simbolo();
+                                       s.auxiliar = "var <div class='indentado'>"+s1.auxiliar+";</div>";RESULT = s;:}
+| error:e DEFVARLIST puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'var'",e);:}
+| var error:e puntoComa {:parser.lecturaError("Se esperaban definiciones de variables",e);:};
+
+//Definición de variables
+DEFVARLIST ::= VARLIST:v dosPuntos ALLTYPES:t {:Simbolo s1 = (Simbolo) v; Simbolo s = new Simbolo();
+                                    s.auxiliar = s1.auxiliar +":"+((Simbolo)t).tipoDato;
+                                    s1.insertarTiposHash(((Simbolo)t).tipoDatoBasico,parser.apiExp);
+                                    ;RESULT = s;:}
+
+ | DEFVARLIST:l puntoComa VARLIST:v dosPuntos ALLTYPES:t {:Simbolo s1 = (Simbolo) v; Simbolo s = new Simbolo();
+                                    Simbolo s2 = (Simbolo) l;
+                                    s.auxiliar = s2.auxiliar+";<br>"+s1.auxiliar +":"+((Simbolo)t).tipoDato;
+                                    s1.insertarTiposHash(((Simbolo)t).tipoDatoBasico,parser.apiExp);
+                                    ;RESULT = s;:}
+ | VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
+ | DEFVARLIST puntoComa VARLIST error:e ALLTYPES  {:parser.lecturaError("Se esperaba ':' entre la lista de variables y su tipo",e);:}
+ | error:e dosPuntos ALLTYPES  {:parser.lecturaError("Se esperaba lista de variables",e);:};
+
+//Definición de variable
+VARLIST ::= Identificador:id {:Simbolo s = new Simbolo();
+                               s.arrayVariables = new ArrayList<String>();
+                               s.arrayVariables.add((String)id);
+                               s.auxiliar = "<a name='"+((String)id)+"'></a><span class='ident'>"+((String)id)+"</span>";
+                               RESULT = s;:}  
+ | Identificador:id coma VARLIST:v {:Simbolo s = (Simbolo) v;s.arrayVariables.add((String)id);
+                                     s.auxiliar = "<a name='"+((String)id)+"'></a><span class='ident'>"+((String)id)+"</span>" +","+ s.auxiliar;
+                                     RESULT = s;:}
+ | error:e coma VARLIST {:parser.lecturaError("Se esperaba identificador de la variable",e);:}
+ | Identificador:i error:e VARLIST {:parser.lecturaError("Se esperaba ',' despues del identificador de la variable "+i,e);:};
+
+//Definición de procedimiento
+DEFPROC ::=  procedure Identificador:id FORMAL_PARAMLIST:f puntoComa BLQ:b puntoComa {:parser.apiExp.addCabecera("procedure ",((String)id)," ("+((Simbolo)f).auxiliar+")");
+                                                                                    parser.apiExp.escribirArchivo("<hr/>");
+                                                                                    Simbolo s = new Simbolo();
+                                                                                    Simbolo s1 = (Simbolo)b;
+                                                                                    s.auxiliar= "procedure <a name='"+((String)id)+"'></a><span class='ident'>"+((String)id)+"</span> ("+
+                                                                                    ((Simbolo)f).auxiliar+")"+"<br>"+s1.auxiliar+"<br><a href='#"+((String)id)+"'>Inicio rutina</a><br>"+
+                                                                                    "<a href='#inicio'>Inicio de programa</a>";
+                                                                                    parser.apiExp.escribirArchivo(s.auxiliar);
+                                                                                    //RESULT = s;
+                                                                                    parser.apiExp.buscarAsignacion("");
+                                                                                    RESULT = new Simbolo();:}
+//| error:e Identificador FORMAL_PARAMLIST puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'procedure'",e);:};
+| procedure error:e FORMAL_PARAMLIST puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba identificador de procedimiento",e);:} 
+| procedure Identificador:i error:e puntoComa BLQ puntoComa {:parser.lecturaError("Se esperaba la definicion de parametros del procedimiento "+i,e);:};
+
+//He hecho hasta aquí
+//Definicion de funcion
+DEFFUN ::=  function Identificador:id FORMAL_PARAMLIST:f dosPuntos ALLTYPES:t puntoComa BLQ:b puntoComa {:parser.apiExp.addCabecera("function ",((String)id)," ("+((Simbolo)f).auxiliar+"):"+((Simbolo)t).tipoDato);
+                                                                                    parser.apiExp.escribirArchivo("<hr/>");
+                                                                                    Simbolo s = new Simbolo();
+                                                                                    Simbolo s1 = (Simbolo)b;
+                                                                                    s.auxiliar= "function <a name='"+((String)id)+"'></a><span class='ident'>"+((String)id)+"</span> ("+((Simbolo)f).auxiliar+"):"+((Simbolo)t).tipoDato+"<br>"+s1.auxiliar+
+                                                                                    "<br><a href='#"+((String)id)+"'>Inicio rutina</a><br>"+
+                                                                                    "<a href='#inicio'>Inicio de programa</a>";
+                                                                                    parser.apiExp.escribirArchivo(s.auxiliar);
+                                                                                    //RESULT = s;
+                                                                                    if (!(parser.apiExp.buscarAsignacion((String) id))){
+                                                                                        parser.lecturaErrorSem("No se ha asignado salida a la función: "+((String)id));parser.apiExp.cancelar();
+                                                                                    };
+                                                                                    RESULT = new Simbolo();:}
+| function error:e FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba identificador de la funcion",e);:} 
+| function Identificador:i error:e dosPuntos ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba la definicion de parametros de la funcion "+i,e);:}
+| function Identificador:i FORMAL_PARAMLIST dosPuntos ALLTYPES puntoComa error:e puntoComa  {:parser.lecturaError("Se esperaba cuerpo de la funcion "+i,e);:}
+| function Identificador:i FORMAL_PARAMLIST error:e ALLTYPES puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba ':' antes del tipo de dato devuelto por la funcion "+i,e);:}
+| function Identificador:i FORMAL_PARAMLIST dosPuntos error:e puntoComa BLQ puntoComa  {:parser.lecturaError("Se esperaba tipo de dato devuelto por la funcion "+i+" despues de ':'",e);:} ;
+//Definiciones de parametros
+FORMAL_PARAMLIST ::= parentesisAbierto FORMAL_PARAM:f parentesisCerrado {:RESULT = ((Simbolo)f);:}
+ | error:e FORMAL_PARAM parentesisCerrado  {:parser.lecturaError("Se esperaba '(' antes de la lista de parametros ",e);:}
+ | parentesisAbierto error:e parentesisCerrado  {:parser.lecturaError("Los parametros se encuentran mal definidos",e);:}
+ |  ;
+//Definicion de parametro
+FORMAL_PARAM ::= VARLIST:v dosPuntos ALLTYPES:t {:String texto = "";boolean primero = true;
+                                                for (String var: ((Simbolo)v).arrayVariables){
+                                                    if (!primero){
+                                                        texto += ",";
+                                                    }else{
+                                                        primero = false;
+                                                    }
+                                                    texto += var;
+                                                };texto+=":"+((Simbolo)t).tipoDato;
+                                                Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) v; s.auxiliar = s1.auxiliar;RESULT = s;:}
+ | error:e dosPuntos ALLTYPES {:parser.lecturaError("La lista de variables esta mal definida en los parametros",e);:}
+ | VARLIST error:e ALLTYPES {:parser.lecturaError("Se esperaba ':' despues de la lista de variables",e);:}
+ | VARLIST:v dosPuntos ALLTYPES:t puntoComa FORMAL_PARAM:resto {:String texto = "";boolean primero = true;
+                                                for (String var: ((Simbolo)v).arrayVariables){
+                                                    if (!primero){
+                                                        texto += ",";
+                                                    }else{
+                                                        primero = false;
+                                                    }
+                                                    texto += var;
+                                                };texto+=":"+((Simbolo)t).tipoDato;
+                                                Simbolo s = new Simbolo(); s.auxiliar = texto+((Simbolo)resto).auxiliar;RESULT = s;:}
+ | VARLIST error:e ALLTYPES puntoComa FORMAL_PARAM {:parser.lecturaError("Se esperaba ':' despues de la lista de variables",e);:}
+ | error:e dosPuntos ALLTYPES puntoComa FORMAL_PARAM {:parser.lecturaError("La lista de variables esta mal definida en los parametros",e);:};
+
+//Reservados de tipos basicos
+TBAS ::= INTEGER {:Simbolo s = new Simbolo();
+               s.tipoDato = Simbolo.T_DATO_INTEGER;
+               s.tipoDatoBasico = Simbolo.T_INTEGER;
+               RESULT = s;:}
+ | REAL  {:Simbolo s = new Simbolo();
+               s.tipoDato = Simbolo.T_DATO_REAL;
+                s.tipoDatoBasico = Simbolo.T_REAL;
+               RESULT = s;:}
+ | CHARACTER {:Simbolo s = new Simbolo();
+               s.tipoDato = Simbolo.T_DATO_CHARACTER;
+                s.tipoDatoBasico = Simbolo.T_CHARACTER;
+               RESULT = s;:};
+
+//Declaracion de sentencias
+SENT ::= ASIG:a puntoComa {:Simbolo s1 = (Simbolo) a;s1.auxiliar = s1.auxiliar + ";<br>"; RESULT = s1;:}
+ | PROC_CALL:a puntoComa  {:Simbolo s1 = (Simbolo) a;s1.auxiliar = s1.auxiliar + ";<br>"; RESULT = s1;:}
+ | EXEBLQ:e {:Simbolo s1 = (Simbolo) e; RESULT = s1;:}
+ | CASE:e {:Simbolo s1 = (Simbolo) e; RESULT = s1;:}
+ | COND:e {:Simbolo s1 = (Simbolo) e;RESULT = s1;:}
+ | WLOOP:e {:Simbolo s1 = (Simbolo) e; RESULT = s1;:}
+ | FLOOP:e {:Simbolo s1 = (Simbolo) e; RESULT = s1;:};
+
+//Control Case
+CASE ::= ident_case EXP:e of CASELIST:l end puntoComa {:Simbolo s  = new Simbolo();
+                                                        Simbolo s1  = (Simbolo) e;
+                                                        Simbolo s2  = (Simbolo) l;
+                                                        if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Las expresiones de los casos no son de tipo entero");};
+                                                        s.auxiliar = "<span class='palres'> case</span> "+s1.auxiliar+"<span class='palres'> of </span><div class='indentado'>"+s2.auxiliar+"</div> <span class='palres'> end</span>;";
+                                                        RESULT = s;:}
+| error:e EXP of CASELIST end puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'case'",e);:}
+| ident_case EXP error:e CASELIST end puntoComa {:parser.lecturaError("Se esperaba palabra reservada 'of'",e);:}
+| ident_case error:e of CASELIST end puntoComa {:parser.lecturaError("Error en la expresión principal del case",e);:}
+| ident_case EXP of error:e end puntoComa {:parser.lecturaError("Error en la lista de casos de case",e);:}
+| ident_case EXP of CASELIST error:e puntoComa {:parser.lecturaError("Se esperaba 'end' en la finalización de case",e);:};
+
+//Sentencias de case
+CASELIST ::= EXP:e dosPuntos SENT:st {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
+                                     if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Las expresiones de los casos no son de tipo entero");};
+                                     Simbolo s2 = (Simbolo) st; s.auxiliar = s1.auxiliar + ": "+s2.auxiliar;
+                                    RESULT = s;:}
+| EXP:e dosPuntos SENT:st CASELIST:l {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;Simbolo s3 = (Simbolo) l;
+                                    if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("Las expresiones de los casos no son de tipo entero");};
+                                     Simbolo s2 = (Simbolo) st; s.auxiliar = s1.auxiliar + ":"+s2.auxiliar+"<br>"+s3.auxiliar;
+                                    RESULT = s;:};
+
+//Control de flujp WHILE
+WLOOP ::= ident_while EXP:e ident_do SENT:st {:Simbolo s = new Simbolo();
+                                        Simbolo s1 = (Simbolo) e;
+                                        Simbolo s2 = (Simbolo) st;
+                                        if (s1.tipoOperador != s.T_OP_COMP){
+                                            parser.lecturaErrorSem("No es de tipo booleano la expresión del WHILE");
+                                        };
+                                        s.auxiliar = "<span class='palres'> while </span>\n"+s1.auxiliar+
+                                        "<span class='palres'> do </span><div class='indentado'>"+s2.auxiliar+"</div>";RESULT = s;:}
+|ident_while error:e ident_do SENT {:parser.lecturaError("Error de expresión en el while",e);:}
+|ident_while EXP error:e SENT {:parser.lecturaError("Se esperaba palabra reservada 'do'",e);:};
+
+//CONTROL de flujo FOR
+FLOOP ::= ident_for Identificador:id dosPuntosIgual EXP:e1 to EXP:e2 ident_do SENT:st {:Simbolo s = new Simbolo();
+                                        Simbolo s1 = (Simbolo) e1;
+                                        Simbolo s2 = (Simbolo) e2;
+                                        Simbolo s3 = (Simbolo) st;
+                                        String nomId = (String) id;
+                                        if (parser.apiExp.getTipo(nomId) != s.T_INTEGER || s1.tipoDatoBasico != s.T_INTEGER || s2.tipoDatoBasico != s.T_INTEGER){
+                                            parser.lecturaErrorSem("El bucle for no está definido con enteros");
+                                        }
+                                        s.auxiliar = "<span class='palres'> for </span><a href='#"+nomId+"'>"+nomId+" </a>"+
+                                        " := "+s1.auxiliar+" <span class='palres'> to </span>"+s2.auxiliar+"<div class='indentado'>"+s3.auxiliar+"</div>";RESULT = s;:}
+ | ident_for error:e dosPuntosIgual EXP to EXP ident_do SENT {:parser.lecturaError("Error en el identificador del for",e);:}
+ | ident_for Identificador:i error:e EXP to EXP ident_do SENT {:parser.lecturaError("Se esperaba ':=' despues del identificador "+i+" del bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual EXP error:e EXP ident_do SENT {:parser.lecturaError("Se esperaba palabra reservada 'to' en bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual EXP to EXP error:e SENT {:parser.lecturaError("Se esperaba palabra reservada 'do' en bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual EXP to error:e ident_do SENT {:parser.lecturaError("Error en la expresion de limite del bucle for",e);:}
+ | ident_for Identificador:i dosPuntosIgual error:e to EXP ident_do SENT {:parser.lecturaError("Error en la expresion de inicializacion del bucle for",e);:};
+
+//Condicional IF
+COND ::= ident_if EXP:e then SENT:st ELSECOND:ec {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
+                                            if (s1.tipoOperador != s.T_OP_COMP){
+                                                parser.lecturaErrorSem("No es de tipo booleano la expresión del IF");
+                                            };
+                                            Simbolo s2 = (Simbolo) st;Simbolo s3 = (Simbolo) ec;
+                                            s.auxiliar = "<span class='palres'>if </span> "+s1.auxiliar+" <span class='palres'> then </span><div class='indentado'>\n"+s2.auxiliar+"\n</div>\n"+s3.auxiliar+"\n";
+                                            //parser.apiExp.escribirBuffer(s.auxiliar);
+                                            RESULT = s;:}
+| ident_if error:e then SENT ELSECOND {:parser.lecturaError("Error en la expresion de condicion del if",e);:}
+| ident_if EXP error:e SENT ELSECOND {:parser.lecturaError("Se esperaba la palabra reservada 'then' en el if",e);:};
+//| ident_if EXP then error:e ELSECOND {:parser.lecturaError("Error en las sentencias del cuerpo del if",e);:};
+
+//Condicional ELSE
+ELSECOND ::= ident_else SENT:st {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) st;
+                                 s.auxiliar = "<span class='palres'>else</span>\n<div class='indentado'>"+s1.auxiliar+"</div>";RESULT = s;:}
+    | {:RESULT = new Simbolo();:};
+
+//Identificadores
+ID ::= Identificador:i {:Simbolo s = new Simbolo();s.auxiliar = "<a href='#"+((String)i)+"'>"+((String)i)+"</a>";s.nombre = (String) i;s.tipoDatoBasico = parser.apiExp.getTipo(s.nombre);RESULT = s;:}  
+ | Identificador:i corcheteAb EXP:e corcheteCe {:Simbolo s = new Simbolo(); Simbolo s1 = (Simbolo) e;String id = (String) i;
+                                            if (s1.tipoDatoBasico != s.T_INTEGER){parser.lecturaErrorSem("No es un entero en el acceso al array: "+i);};
+                                            s.auxiliar = "<a href='#"+id+"'>"+id+"</a>"+"["+s1.auxiliar+"]";
+                                            RESULT = s;:}  
+ | Identificador:i1 punto Identificador:i2 {:Simbolo s = new Simbolo();String id1 = (String) i1; String id2 = (String) i2;
+                                            s.auxiliar = "<a href='#"+id1+"'>"+id1+"</a>"+"."+"<a href='#"+id2+"'>"+id2+"</a>";
+                                            RESULT = s;:}  
+
+ | Identificador:i corcheteAb error:e corcheteCe {:parser.lecturaError("Error en la expresion de acceso en el identificador "+i,e);:};
+
+//Asignaciones
+ASIG ::= ID:id dosPuntosIgual EXP:e {:Simbolo s = new Simbolo();
+                                       Simbolo s1 = (Simbolo) id;
+                                       Simbolo s2 = (Simbolo) e;
+                                       s.auxiliar = s1.auxiliar +":="+s2.auxiliar;
+                                        //parser.apiExp.escribirBuffer(s.auxiliar);
+                                       parser.apiExp.insertAsig(s1.nombre);
+                                        
+                                        if (s1.tipoDatoBasico=="REGISTRO" ){
+                                            parser.lecturaErrorSem("No se puede asignar directamente a variables de tipo registro");
+                                        };
+                                        if (s1.tipoDatoBasico == "ARRAY"){
+                                            parser.lecturaErrorSem("No se puede asignar directamente a variables de tipo array");
+                                        }
+                                        ;RESULT = s;
+                                :};
+
+//Uso de expresiones
+EXP ::= EXP:e1 OP:op EXP:e2  {:Simbolo operacion = (Simbolo) op;Simbolo s1 = (Simbolo) e1;Simbolo s2 = (Simbolo) e2;
+                        Simbolo s = new Simbolo();s.auxiliar = s1.auxiliar + operacion.op + s2.auxiliar;
+                        if (s1.tipoOperador == s.T_OP_COMP || s2.tipoOperador == s.T_OP_COMP || operacion.tipoOperador == s.T_OP_COMP){
+                            s.tipoOperador = s.T_OP_COMP;
+                        };RESULT = s;:}
+ | FACTOR:f {:RESULT = f;:};
+
+//Tipo de operaciones entre expresiones
+OP ::= OPCOMP:op {:RESULT = op;:}
+ | OPLOG:op  {:RESULT = op;:}
+ | OPARIT:op {:RESULT = op;:} ;
+
+//Operaciones de comparacion entre expresiones
+OPCOMP ::= menor {:Simbolo s = new Simbolo();
+               s.op = "<";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | mayor  {:Simbolo s = new Simbolo();
+               s.op = ">";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | menorIgual  {:Simbolo s = new Simbolo();
+               s.op = "<=";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | mayorIgual  {:Simbolo s = new Simbolo();
+               s.op = ">=";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | igual  {:Simbolo s = new Simbolo();
+               s.op = "==";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:}
+ | distinto {:Simbolo s = new Simbolo();
+               s.op = "!=";
+               s.tipoOperador= Simbolo.T_OP_COMP;
+               RESULT = s;:};
+
+//Operaciones aritmeticas entre expresiones
+OPARIT ::= suma {:Simbolo s = new Simbolo();
+               s.op = "+";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | menos {:Simbolo s = new Simbolo();
+               s.op = "-";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | asterisco  {:Simbolo s = new Simbolo();
+               s.op = "*";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | div  {:Simbolo s = new Simbolo();
+               s.op = "/";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:}
+ | mod {:Simbolo s = new Simbolo();
+               s.op = "%";
+               s.tipoOperador= Simbolo.T_OP_ARIT;
+               RESULT = s;:} ;
+
+//Operaciones logicas entre expresiones
+OPLOG ::= or {:Simbolo s = new Simbolo();
+               s.op = "||";
+               s.tipoOperador= Simbolo.T_OP_LOG;
+               RESULT = s;:}
+ | and  {:Simbolo s = new Simbolo();
+               s.op = "&&";
+               s.tipoOperador= Simbolo.T_OP_LOG;
+               RESULT = s;:} ;
+
+//Declaraciones de factores
+FACTOR ::= SIMPVALUE:e {:RESULT = e;:}
+ | not FACTOR:e {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;s.auxiliar = "not "+s1.auxiliar;
+                RESULT = s;:}
+ | Identificador:i corcheteAb EXP:e corcheteCe {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
+                s.auxiliar = "<a href='#"+((String)i)+"'>"+((String)i)+"</a>["+s1.auxiliar+"]";RESULT = s;:}
+ | parentesisAbierto EXP:e parentesisCerrado  {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
+                s.auxiliar = "("+s1.auxiliar+")";RESULT = s;:}
+ | Identificador:i SUBPPARAMLIST:l {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) l;
+                s.auxiliar = "<a href='#"+((String)i)+"'>"+((String)i)+"</a>"+s1.auxiliar;RESULT = s;:}
+ | Identificador:i1 punto Identificador:i2 {:Simbolo s = new Simbolo();String id1 = (String) i1; String id2 = (String) i2;
+                                            s.auxiliar = "<a href='#"+id1+"'>"+id1+"</a>"+"."+"<a href='#"+id2+"'>"+id2+"</a>";
+                                            s.tipoDatoBasico = parser.apiExp.getTipo(id2);
+                                            RESULT = s;:}
+ | Identificador:i corcheteAb error:e corcheteCe {:parser.lecturaError("Error en la expresion de acceso en el identificador "+i,e);:};
+
+//SubParametros
+SUBPPARAMLIST ::= parentesisAbierto EXPLIST:e parentesisCerrado  {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
+                                                                s.auxiliar = "("+s1.auxiliar+")" ;
+                                                                RESULT = s;:}
+ |  {:RESULT = new Simbolo();:};
+
+//Lista de expresiones
+EXPLIST ::= EXP:e  {:Simbolo s = (Simbolo) e;RESULT = e;:}
+ | EXP:e coma EXPLIST:l {:Simbolo s1 = (Simbolo) e;Simbolo s2 = (Simbolo) l;Simbolo s = new Simbolo();
+                        s.auxiliar = s1.auxiliar+" , "+s2.auxiliar;RESULT = s;:};
+
+//Llamada a procedimiento
+PROC_CALL ::= Identificador:i SUBPPARAMLIST:l {:Simbolo s1 = (Simbolo) l;
+                                                //parser.apiExp.escribirBuffer((String)i+s1.auxiliar);
+                                                Simbolo s = new Simbolo();
+                                                s.auxiliar = "<a href='#"+((String)i)+"'>"+((String)i)+"</a>"+s1.auxiliar;
+                                                RESULT = s;:};
+
+//Declaracion del cuerpo de procedimiento o funcion
+EXEBLQ ::= DCLLIST_BLQ:d begin SENTLIST:l end {:Simbolo s1 = (Simbolo) l;Simbolo s2 = (Simbolo) d;
+                                             parser.apiExp.escribirBuffer(s2.auxiliar+"<br>begin<br>"+s1.auxiliar+"<br>end<br>");parser.apiExp.liberarBuffer();:}
+| DCLLIST_BLQ begin:b SENTLIST error:e puntoComa{:parser.lecturaError("Se esperaba cierre end del begin (en linea: "+bleft+")",e);:};
+
+//Lista de declaraciones previas al cuerpo
+DCLLIST_BLQ ::= DCLLIST_BLQ:l puntoComa DCL_BLQ:d  {:Simbolo s1 = (Simbolo) l;Simbolo s2 = (Simbolo) d;
+                                             parser.apiExp.escribirBuffer(s1.auxiliar+";<br>\n"+s2.auxiliar);:}
+ |  {:RESULT = new Simbolo();:};
+
+//Tipos de declaraciones previas al cuerpo
+DCL_BLQ ::= DEFCTE:d {:RESULT = d;:}
+ | DEFTYPE:d {:RESULT = d;:}  
+ | DEFVAR:d {:RESULT = d;:};
+
+//Tipos que podemos utilizar en las definiciones
+ALLTYPES ::= TBAS:t {:RESULT = t;:}  
+ | Identificador:id {:Simbolo s = new Simbolo();
+               s.tipoDato = (String) id;
+               s.tipoDatoBasico = (String) id;
+               RESULT = s;:};
+
+

@@ -134,9 +134,10 @@ public class ventanaNueva extends javax.swing.JFrame {
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         this.limpiarError();
         this.limpiarMensajes();
-        try {
+        try {   
+                File archivo = new File(ruta);
                 AnalizadorLexico lexico = new AnalizadorLexico( new java.io.FileReader(ruta),this);
-                parser sintactico = new parser(lexico,this);
+                parser sintactico = new parser(lexico,this,archivo.getName()+".html");
                 sintactico.parse();
                 this.finalizarErrores();
         }
