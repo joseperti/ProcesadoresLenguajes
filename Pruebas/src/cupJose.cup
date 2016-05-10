@@ -52,6 +52,7 @@ precedence left array,record;
 
 PRG ::= program Identificador:id puntoComa BLQ:b punto {:parser.apiExp.escribirTituloArchivo((String)id);parser.apiExp.escribirBufferDelante("<hr/><h2>Programa Principal</h2><a name='progPpal'></a>");
                                                       Simbolo s1 = (Simbolo) b;parser.apiExp.escribirBuffer(s1.auxiliar);
+                                                      parser.apiExp.escribirBuffer("<br><a href='#progPpal'>Inicio del programa principal</a><br><a href='#inicio'>Inicio de programa</a>");
                                                       parser.apiExp.liberarBufferDelante();parser.apiExp.cerrarFichero();
                                                       :}
 | error:e Identificador puntoComa BLQ punto {:parser.lecturaError("Se esperaba palabra reservada program",e);:}
@@ -440,7 +441,7 @@ FACTOR ::= SIMPVALUE:e {:RESULT = e;:}
  | Identificador:i corcheteAb EXP:e corcheteCe {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
                 s.auxiliar = "<a href='#"+((String)i)+"'>"+((String)i)+"</a>["+s1.auxiliar+"]";RESULT = s;:}
  | parentesisAbierto EXP:e parentesisCerrado  {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) e;
-                s.auxiliar = "("+s1.auxiliar+")";RESULT = s;:}
+                s.auxiliar = "("+s1.auxiliar+")";s.tipoOperador = s1.tipoOperador;RESULT = s;:}
  | Identificador:i SUBPPARAMLIST:l {:Simbolo s = new Simbolo();Simbolo s1 = (Simbolo) l;
                 s.auxiliar = "<a href='#"+((String)i)+"'>"+((String)i)+"</a>"+s1.auxiliar;RESULT = s;:}
  | Identificador:i1 punto Identificador:i2 {:Simbolo s = new Simbolo();String id1 = (String) i1; String id2 = (String) i2;
@@ -468,8 +469,8 @@ PROC_CALL ::= Identificador:i SUBPPARAMLIST:l {:Simbolo s1 = (Simbolo) l;
                                                 RESULT = s;:};
 
 //Declaracion del cuerpo de procedimiento o funcion
-EXEBLQ ::= DCLLIST_BLQ:d begin SENTLIST:l end {:Simbolo s1 = (Simbolo) l;Simbolo s2 = (Simbolo) d;
-                                             parser.apiExp.escribirBuffer(s2.auxiliar+"<br>begin<br>"+s1.auxiliar+"<br>end<br>");parser.apiExp.liberarBuffer();:}
+EXEBLQ ::= DCLLIST_BLQ:d begin SENTLIST:l end {:Simbolo s1 = (Simbolo) l;Simbolo s2 = (Simbolo) d;Simbolo s = new Simbolo();
+                                             s.auxiliar = s2.auxiliar+"<br>begin<br><div class='indentado'>"+s1.auxiliar+"</div>\n<br>end<br>";RESULT = s;parser.apiExp.liberarBuffer();:}
 | DCLLIST_BLQ begin:b SENTLIST error:e puntoComa{:parser.lecturaError("Se esperaba cierre end del begin (en linea: "+bleft+")",e);:};
 
 //Lista de declaraciones previas al cuerpo
